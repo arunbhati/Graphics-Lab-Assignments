@@ -27,7 +27,7 @@ public class DrawWindow extends JPanel {
 	    		canvas.setRGB(x, y, color);
 	        }
 	    }
-	    //drawAxes() ;
+	    drawAxes() ;
 	    repaint();
 	}
 	
@@ -52,7 +52,7 @@ public class DrawWindow extends JPanel {
 	 
 	// Draw x and y axes on canvas.
 	public void drawAxes(){
-		Color color = Color.WHITE ;
+		Color color = Color.LIGHT_GRAY ;
 		for(int i=0 ; i<500 ; i++){
 			drawPixel(color,i,0) ;
 			drawPixel(color,0,i) ;

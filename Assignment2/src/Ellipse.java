@@ -146,18 +146,20 @@ public class Ellipse {
 		ellipse.drawPoints() ;
 		
 		ellipse.calculateRegion() ;
-		
+			
 		// Draw Spline Curve
 		ellipse.showEllipse();
 	
-		for(int i=0 ; i<ellipse.boundaryPointsList.size();i++){
+		
+		
+		/*for(int i=0 ; i<ellipse.boundaryPointsList.size();i++){
 			Collections.sort(ellipse.boundaryPointsList.get(i),new PointComparator());
 			for (Point pt : ellipse.boundaryPointsList.get(i)) {
 				System.out.print(pt.x + " ");
 			}
 			System.out.println() ;
 		}
-		/*for(int i=0;i<ellipse.boundaryPointsList.size();i++){
+		for(int i=0;i<ellipse.boundaryPointsList.size();i++){
 			for(int j=0;j<ellipse.boundaryPointsList.get(i).size();j++){
 				System.out.print(ellipse.boundaryPointsList.get(i).get(j)+"  ") ;
 			}
@@ -191,111 +193,83 @@ public class Ellipse {
 	void calculateRegion(){
 		
 		for(int i=0;i<boundaryPointsList.size();i++){
-			int ln = boundaryPointsList.get(i).size() ;
 			
-			if(ln==0){
+			if(boundaryPointsList.get(i).size()==0){
 				continue ;
 			}
 			
-			int minxCord , maxxCord ;
-			boolean isSameRegion = true  ;
+			Collections.sort(boundaryPointsList.get(i),new PointComparator()) ;
+			int yCord = boundaryPointsList.get(i).get(0).y ;
+			ArrayList<Point> groups = createGroup(i) ; 
+			int ln = groups.size() ;
 			
-			minxCord = maxxCord = boundaryPointsList.get(i).get(0).x ;
-			for(int j=1;j<boundaryPointsList.get(i).size();j++){
-				if(boundaryPointsList.get(i).get(j).regionNumber!=boundaryPointsList.get(i).get(j-1).regionNumber){
-					isSameRegion = false ;
-					break ;
-				}
-				minxCord = Math.min(minxCord, boundaryPointsList.get(i).get(j).x) ;
-				maxxCord = Math.max(maxxCord, boundaryPointsList.get(i).get(j).x) ;
-			}
-			
-			if(isSameRegion){
-				if(boundaryPointsList.get(i).get(0).regionNumber==0){
-					fillLine(minxCord,maxxCord,boundaryPointsList.get(i).get(0).y,Color.ORANGE) ;	
-				}else{
-					fillLine(minxCord,maxxCord,boundaryPointsList.get(i).get(0).y,Color.GREEN) ;
-				}
-			}else if(ln==1){
-				if(boundaryPointsList.get(i).get(0).regionNumber==1){
-					jPanel.drawPixel(Color.GREEN, boundaryPointsList.get(i).get(0).x, boundaryPointsList.get(i).get(0).y ) ;
-				}else{
-					jPanel.drawPixel(Color.ORANGE, boundaryPointsList.get(i).get(0).x, boundaryPointsList.get(i).get(0).y ) ;
-				}
+			if(ln==1){
+				fillLine(groups.get(0).x,groups.get(0).y,yCord,groups.get(0).regionNumber) ;	
 			}else if(ln==2){
-				for(int j=0;j<2;j++){
-					if(boundaryPointsList.get(i).get(j).regionNumber==1){
-						jPanel.drawPixel(Color.GREEN, boundaryPointsList.get(i).get(j).x, boundaryPointsList.get(i).get(j).y ) ;
-					}else{
-						jPanel.drawPixel(Color.ORANGE, boundaryPointsList.get(i).get(j).x, boundaryPointsList.get(i).get(j).y ) ;
-					}
+				if(groups.get(0).regionNumber==groups.get(1).regionNumber){
+					fillLine(groups.get(0).x,groups.get(1).y,yCord,groups.get(0).regionNumber) ;	
+				}else{
+					fillLine(groups.get(0).x,groups.get(0).y,yCord,groups.get(0).regionNumber) ;
+					fillLine(groups.get(1).x,groups.get(1).y,yCord,groups.get(1).regionNumber) ;
 				}
 			}else if(ln==3){
-				
-			}else if(ln==4){
-				Collections.sort(boundaryPointsList.get(i),new PointComparator()) ;
-				if(boundaryPointsList.get(i).get(0).regionNumber == boundaryPointsList.get(i).get(1).regionNumber ){
-					if(boundaryPointsList.get(i).get(0).regionNumber==0){
-						fillLine(boundaryPointsList.get(i).get(0).x,boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(0).y,Color.ORANGE) ;	
-					}else{
-						fillLine(boundaryPointsList.get(i).get(0).x,boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(0).y,Color.GREEN) ;
-					}
-					
-					if(boundaryPointsList.get(i).get(2).regionNumber==0){
-						fillLine(boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(3).x,boundaryPointsList.get(i).get(2).y,Color.ORANGE) ;	
-					}else{
-						fillLine(boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(3).x,boundaryPointsList.get(i).get(2).y,Color.GREEN) ;
-					}
-				}else if(boundaryPointsList.get(i).get(2).regionNumber == boundaryPointsList.get(i).get(1).regionNumber){
-					
-					fillLine(boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(2).y,Color.RED) ;
-					if(boundaryPointsList.get(i).get(0).regionNumber==0){
-						fillLine(boundaryPointsList.get(i).get(0).x,boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(0).y,Color.ORANGE) ;	
-						fillLine(boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(3).x,boundaryPointsList.get(i).get(0).y,Color.ORANGE) ;	
-						
-					}else{
-						fillLine(boundaryPointsList.get(i).get(0).x,boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(0).y,Color.GREEN) ;
-						fillLine(boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(3).x,boundaryPointsList.get(i).get(0).y,Color.GREEN) ;	
-						
-					}
-					
+				if(groups.get(0).regionNumber==groups.get(1).regionNumber){
+					fillLine(groups.get(0).x,groups.get(1).y,yCord,groups.get(0).regionNumber) ;
+					fillLine(groups.get(2).x,groups.get(2).y,yCord,groups.get(2).regionNumber) ;
+				}else if(groups.get(1).regionNumber==groups.get(2).regionNumber){
+					fillLine(groups.get(1).x,groups.get(2).y,yCord,groups.get(2).regionNumber) ;
+					fillLine(groups.get(0).x,groups.get(0).y,yCord,groups.get(0).regionNumber) ;		
 				}else{
-					fillLine(boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(2).y,Color.RED) ;
-					if(boundaryPointsList.get(i).get(0).regionNumber==0){
-						fillLine(boundaryPointsList.get(i).get(0).x,boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(0).y,Color.ORANGE) ;	
-					}else{
-						fillLine(boundaryPointsList.get(i).get(0).x,boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(0).y,Color.GREEN) ;
-					}
-					if(boundaryPointsList.get(i).get(3).regionNumber==0){
-						fillLine(boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(3).x,boundaryPointsList.get(i).get(0).y,Color.ORANGE) ;	
-					}else{
-						fillLine(boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(3).x,boundaryPointsList.get(i).get(0).y,Color.GREEN) ;
-					}
+					fillLine(groups.get(0).x,groups.get(1).x,yCord,groups.get(0).regionNumber) ;
+					fillLine(groups.get(1).y,groups.get(2).y,yCord,groups.get(2).regionNumber) ;
+					fillLine(groups.get(1).x,groups.get(1).y,yCord,3) ;
+				}
+			}else if(ln==4){
+				if(groups.get(0).regionNumber==groups.get(1).regionNumber){
+					fillLine(groups.get(0).x,groups.get(1).y,yCord,groups.get(0).regionNumber) ;
+					fillLine(groups.get(2).x,groups.get(3).y,yCord,groups.get(2).regionNumber) ;
+				}else if(groups.get(0).regionNumber==groups.get(2).regionNumber){
+					fillLine(groups.get(0).x,groups.get(1).x,yCord,groups.get(0).regionNumber) ;
+					fillLine(groups.get(2).y,groups.get(3).y,yCord,groups.get(3).regionNumber) ;
+					fillLine(groups.get(1).x,groups.get(2).y,yCord,3) ;
+				}else if(groups.get(1).regionNumber==groups.get(2).regionNumber){
+					fillLine(groups.get(0).x,groups.get(1).x,yCord,groups.get(0).regionNumber) ;
+					fillLine(groups.get(2).y,groups.get(3).y,yCord,groups.get(3).regionNumber) ;
+					fillLine(groups.get(1).x,groups.get(2).y,yCord,3) ;
 				}
 			}
 		}
-		
-		
-		
-		/*if(cofficents[0][0]<cofficents[1][0]){
-			
-		}else if(cofficents[0][0]<cofficents[1][0]){
-			
-		}else if(cofficents[0][1]<cofficents[1][1]){
-			
-		}else if(cofficents[0][1]>cofficents[1][1]){
-			
-		}else{
-			if(cofficents[0][2]!=cofficents[1][2]){
-				jPanel.fillRegion(Color.GREEN,(int)cofficents[0][0],(int)cofficents[0][1]) ;
-				jPanel.fillRegion(Color.BLACK,((int)cofficents[0][0]+ (int)Math.max(cofficents[0][2], cofficents[1][2]) - 1),(int)cofficents[0][1]) ;
-			}else{
-				
-			}
-		}*/
 	}
 	
-	private void fillLine(int xFirst,int xLast,int y,Color c){
+	public ArrayList<Point> createGroup(int pos){
+		ArrayList<Point> list = new ArrayList<Point>() ;
+		if(boundaryPointsList.get(pos).size()==0)
+			return list ;
+		
+		int count=0 ;
+		list.add(new Point(boundaryPointsList.get(pos).get(0).x,boundaryPointsList.get(pos).get(0).x,boundaryPointsList.get(pos).get(0).regionNumber)) ;
+		for(int i=1;i<boundaryPointsList.get(pos).size();i++){
+			if((list.get(count).regionNumber==boundaryPointsList.get(pos).get(i).regionNumber) && ((list.get(count).y+1) == boundaryPointsList.get(pos).get(i).x)){
+				list.get(count).y = list.get(count).y + 1 ;
+			}else if((list.get(count).regionNumber==boundaryPointsList.get(pos).get(i).regionNumber) && ((list.get(count).y) == boundaryPointsList.get(pos).get(i).x)){
+				continue ;
+			}else{
+				count++ ;
+				list.add(new Point(boundaryPointsList.get(pos).get(i).x,boundaryPointsList.get(pos).get(i).x,boundaryPointsList.get(pos).get(i).regionNumber)) ;
+			} 
+		}
+		return list;
+	}	
+	
+	private void fillLine(int xFirst,int xLast,int y,int regionNumber){
+		Color c ;
+		if(regionNumber==1){
+			c  = Color.GREEN ;
+		}else if(regionNumber==0){
+			c = Color.ORANGE ;
+		}else{
+			c = Color.RED ;
+		}
 		for(int i=xFirst;i<=xLast;i++){
 			jPanel.drawPixel(c, i, y);
 		}
