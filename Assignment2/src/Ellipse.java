@@ -1,13 +1,19 @@
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Scanner;
 import javax.swing.JFrame;
+import javax.swing.SortOrder;
 
 public class Ellipse {
 	private double[] constants ;
 	private JFrame jFrame ; 
 	private DrawWindow jPanel ;
 	private double[][] cofficents ;
+	private ArrayList< ArrayList<Point> >	boundaryPointsList ;
+	private int currentRegion ;
+
 	
 	// Constructor of SplineCurve Class that will initialize other classes.
 	public Ellipse(int frameWidth,int frameHeight){
@@ -16,6 +22,11 @@ public class Ellipse {
 		jPanel = new  DrawWindow(frameWidth,frameHeight) ;	
 		jFrame.add(jPanel); 
 		jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		boundaryPointsList = new ArrayList< ArrayList<Point>>() ;
+		boundaryPointsList.ensureCapacity(frameHeight) ;
+		for(int i=0;i<frameHeight;i++){
+			boundaryPointsList.add(new ArrayList<Point>()) ;
+		}
 	}
 	
 	// Print spine curve
@@ -56,20 +67,18 @@ public class Ellipse {
 		xCord = 0 ;
 		yCord = (int)constants[3] ;
 		
-		if(jPanel.isValidPixel((int)constants[0],(int)constants[1])){
-			Color c = Color.BLUE ;
-		//	jPanel.drawPixel(c,(int)constants[0],(int)constants[1]) ;
-		}
-		
 		x = xCord ;
 		y = yCord ;
 		if(jPanel.isValidPixel(x+(int)constants[0],y+(int)constants[1])){
 			Color c = Color.BLUE ;
+			System.out.println(x + " " + y +  " " + (int)constants[0] + " " + (int)constants[1]) ;
+			addPointInList(x,y,(int)constants[0],(int)constants[1]) ;
 			jPanel.drawPixel(c, x+(int)constants[0], y+(int)constants[1]) ;
 			jPanel.drawPixel(c, x+(int)constants[0], -y+(int)constants[1]) ;
 			jPanel.drawPixel(c, -x+(int)constants[0],-y+(int)constants[1]) ;
 			jPanel.drawPixel(c, -x+(int)constants[0], y+(int)constants[1]) ;
 		}
+		
 		
 		
 		while(getCurrentRegion(xCord,yCord)==1){
@@ -83,8 +92,10 @@ public class Ellipse {
 			}
 			x = xCord ;
 			y = yCord ;
+
 			if(jPanel.isValidPixel(x+(int)constants[0],y+(int)constants[1])){
 				Color c = Color.BLUE ;
+				addPointInList(x,y,(int)constants[0],(int)constants[1]) ;
 				jPanel.drawPixel(c, x+(int)constants[0], y+(int)constants[1]) ;
 				jPanel.drawPixel(c, x+(int)constants[0], -y+(int)constants[1]) ;
 				jPanel.drawPixel(c, -x+(int)constants[0],-y+(int)constants[1]) ;
@@ -106,6 +117,7 @@ public class Ellipse {
 			y = yCord ;
 			if(jPanel.isValidPixel(x+(int)constants[0],y+(int)constants[1])){
 				Color c = Color.BLUE ;
+				addPointInList(x,y,(int)constants[0],(int)constants[1]) ;
 				jPanel.drawPixel(c, x+(int)constants[0], y+(int)constants[1]) ;
 				jPanel.drawPixel(c, x+(int)constants[0], -y+(int)constants[1]) ;
 				jPanel.drawPixel(c, -x+(int)constants[0],-y+(int)constants[1]) ;
@@ -125,16 +137,31 @@ public class Ellipse {
 		// Get inputs
 		ellipse.getInput() ;
 		
-		ellipse.fillConstants(0) ;
+		ellipse.currentRegion = 0 ;
+		ellipse.fillConstants() ;
 		ellipse.drawPoints() ;
-		ellipse.fillConstants(1) ;
+		
+		ellipse.currentRegion = 1 ;
+		ellipse.fillConstants() ;
 		ellipse.drawPoints() ;
-	//	ellipse.jPanel.drawPixel(Color.BLUE,0,100) ;
-	//	ellipse.jPanel.drawPixel(Color.BLUE,0,-100) ;
-	//	System.out.println(ellipse.jPanel.canvas.getRGB(0+500, 500-100)) ;
+		
 		ellipse.calculateRegion() ;
+		
 		// Draw Spline Curve
 		ellipse.showEllipse();
+	
+		for(int i=0 ; i<ellipse.boundaryPointsList.size();i++){
+			Collections.sort(ellipse.boundaryPointsList.get(i),new PointComparator());
+			for (Point pt : ellipse.boundaryPointsList.get(i)) {
+				System.out.print(pt.x + " ");
+			}
+			System.out.println() ;
+		}
+		/*for(int i=0;i<ellipse.boundaryPointsList.size();i++){
+			for(int j=0;j<ellipse.boundaryPointsList.get(i).size();j++){
+				System.out.print(ellipse.boundaryPointsList.get(i).get(j)+"  ") ;
+			}
+		}*/
 	}
 	
 	// Function for debugging purpose 
@@ -155,14 +182,102 @@ public class Ellipse {
 		return ;
 	}
 	
-	void fillConstants(int index){
+	void fillConstants(){
 		for(int i=0;i<4;i++){
-			constants[i] = cofficents[index][i] ;
+			constants[i] = cofficents[this.currentRegion][i] ;
 		}
 	}
 	
 	void calculateRegion(){
-		if(cofficents[0][0]<cofficents[1][0]){
+		
+		for(int i=0;i<boundaryPointsList.size();i++){
+			int ln = boundaryPointsList.get(i).size() ;
+			
+			if(ln==0){
+				continue ;
+			}
+			
+			int minxCord , maxxCord ;
+			boolean isSameRegion = true  ;
+			
+			minxCord = maxxCord = boundaryPointsList.get(i).get(0).x ;
+			for(int j=1;j<boundaryPointsList.get(i).size();j++){
+				if(boundaryPointsList.get(i).get(j).regionNumber!=boundaryPointsList.get(i).get(j-1).regionNumber){
+					isSameRegion = false ;
+					break ;
+				}
+				minxCord = Math.min(minxCord, boundaryPointsList.get(i).get(j).x) ;
+				maxxCord = Math.max(maxxCord, boundaryPointsList.get(i).get(j).x) ;
+			}
+			
+			if(isSameRegion){
+				if(boundaryPointsList.get(i).get(0).regionNumber==0){
+					fillLine(minxCord,maxxCord,boundaryPointsList.get(i).get(0).y,Color.ORANGE) ;	
+				}else{
+					fillLine(minxCord,maxxCord,boundaryPointsList.get(i).get(0).y,Color.GREEN) ;
+				}
+			}else if(ln==1){
+				if(boundaryPointsList.get(i).get(0).regionNumber==1){
+					jPanel.drawPixel(Color.GREEN, boundaryPointsList.get(i).get(0).x, boundaryPointsList.get(i).get(0).y ) ;
+				}else{
+					jPanel.drawPixel(Color.ORANGE, boundaryPointsList.get(i).get(0).x, boundaryPointsList.get(i).get(0).y ) ;
+				}
+			}else if(ln==2){
+				for(int j=0;j<2;j++){
+					if(boundaryPointsList.get(i).get(j).regionNumber==1){
+						jPanel.drawPixel(Color.GREEN, boundaryPointsList.get(i).get(j).x, boundaryPointsList.get(i).get(j).y ) ;
+					}else{
+						jPanel.drawPixel(Color.ORANGE, boundaryPointsList.get(i).get(j).x, boundaryPointsList.get(i).get(j).y ) ;
+					}
+				}
+			}else if(ln==3){
+				
+			}else if(ln==4){
+				Collections.sort(boundaryPointsList.get(i),new PointComparator()) ;
+				if(boundaryPointsList.get(i).get(0).regionNumber == boundaryPointsList.get(i).get(1).regionNumber ){
+					if(boundaryPointsList.get(i).get(0).regionNumber==0){
+						fillLine(boundaryPointsList.get(i).get(0).x,boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(0).y,Color.ORANGE) ;	
+					}else{
+						fillLine(boundaryPointsList.get(i).get(0).x,boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(0).y,Color.GREEN) ;
+					}
+					
+					if(boundaryPointsList.get(i).get(2).regionNumber==0){
+						fillLine(boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(3).x,boundaryPointsList.get(i).get(2).y,Color.ORANGE) ;	
+					}else{
+						fillLine(boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(3).x,boundaryPointsList.get(i).get(2).y,Color.GREEN) ;
+					}
+				}else if(boundaryPointsList.get(i).get(2).regionNumber == boundaryPointsList.get(i).get(1).regionNumber){
+					
+					fillLine(boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(2).y,Color.RED) ;
+					if(boundaryPointsList.get(i).get(0).regionNumber==0){
+						fillLine(boundaryPointsList.get(i).get(0).x,boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(0).y,Color.ORANGE) ;	
+						fillLine(boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(3).x,boundaryPointsList.get(i).get(0).y,Color.ORANGE) ;	
+						
+					}else{
+						fillLine(boundaryPointsList.get(i).get(0).x,boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(0).y,Color.GREEN) ;
+						fillLine(boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(3).x,boundaryPointsList.get(i).get(0).y,Color.GREEN) ;	
+						
+					}
+					
+				}else{
+					fillLine(boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(2).y,Color.RED) ;
+					if(boundaryPointsList.get(i).get(0).regionNumber==0){
+						fillLine(boundaryPointsList.get(i).get(0).x,boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(0).y,Color.ORANGE) ;	
+					}else{
+						fillLine(boundaryPointsList.get(i).get(0).x,boundaryPointsList.get(i).get(1).x,boundaryPointsList.get(i).get(0).y,Color.GREEN) ;
+					}
+					if(boundaryPointsList.get(i).get(3).regionNumber==0){
+						fillLine(boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(3).x,boundaryPointsList.get(i).get(0).y,Color.ORANGE) ;	
+					}else{
+						fillLine(boundaryPointsList.get(i).get(2).x,boundaryPointsList.get(i).get(3).x,boundaryPointsList.get(i).get(0).y,Color.GREEN) ;
+					}
+				}
+			}
+		}
+		
+		
+		
+		/*if(cofficents[0][0]<cofficents[1][0]){
 			
 		}else if(cofficents[0][0]<cofficents[1][0]){
 			
@@ -177,7 +292,28 @@ public class Ellipse {
 			}else{
 				
 			}
+		}*/
+	}
+	
+	private void fillLine(int xFirst,int xLast,int y,Color c){
+		for(int i=xFirst;i<=xLast;i++){
+			jPanel.drawPixel(c, i, y);
 		}
+	}
+	
+	private void addPointInList(int x,int y,int xc,int yc){
+		Point p ;
+		int k = 500 ;
+		
+		p = new Point(x+xc,y+yc,currentRegion) ;
+		boundaryPointsList.get(y+yc+k).add(p) ;
+		p = new Point(x+xc,-y+yc,currentRegion) ;
+		boundaryPointsList.get(-y+yc+k).add(p) ;
+		p = new Point(-x+xc,-y+yc,currentRegion) ;
+		boundaryPointsList.get(-y+yc+k).add(p) ;
+		p = new Point(-x+xc,y+yc,currentRegion) ;
+		boundaryPointsList.get(y+yc+k).add(p) ;
+		return ;
 	}
 }
 
@@ -185,33 +321,31 @@ public class Ellipse {
  * value of sign of d(x)/d(u) or d(y)/d(u) that are represented by isPositivex and isPositivey.
  */
 class Point{
-	int dimention ;
-	double[] cordinate ;
-	int isPositivex ;
-	int isPositivey ;
+	int x ;
+	int y ;
+	int regionNumber ;
 	
-	// Constructor for 1-D point.
-	Point(double d){
-		isPositivex = 1 ;
-		isPositivey = 1 ;
-		dimention = 1 ;
-		cordinate = new double[1] ;
-		cordinate[0] = d ;
-	}
-	
-	// Constructor for N-D point where n > 1.
-	Point(int d,double[] list){
-		isPositivex = 1 ;
-		isPositivey = 1 ;
-		dimention = d ;
-		cordinate = new double[d] ;
-		for(int i=0 ; i<dimention ; i++){
-			cordinate[i] = list[i] ;
-		}
+	Point(int x,int y,int n){
+		this.x = x ;
+		this.y = y ;
+		this.regionNumber = n ;
 	}
 	
 	// Print information related to point.
 	public String toString(){	
-		return cordinate[0] + "xpos = " + isPositivex + "ypos = " + isPositivey ;
+		return "region = " + regionNumber + " xpos = " + x + "ypos = " + y ;
 	}
 }
+
+class PointComparator implements Comparator<Point> {
+	@Override
+	public int compare(Point pt1, Point pt2) {
+		if (pt1.x > pt2.x) {
+			return 1;
+		} else if (pt1.x < pt2.x) {
+			return -1;
+		}
+		return 0;
+	}
+}
+
